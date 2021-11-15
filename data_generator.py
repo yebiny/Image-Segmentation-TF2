@@ -43,25 +43,9 @@ class DataGenerator():
 
       return img, mask
     
-    def augment(self, img, mask):
-
-        img = tf.image.random_brightness(img, max_delta=0.5)
-        img = tf.clip_by_value(img, -1, 1)
-
-        ds = tf.concat((img, tf.cast(mask, tf.float32)), axis=2)
-        crop_size = int(self.img_size/4)
-        ds = tf.image.resize_with_crop_or_pad(ds, self.img_size + crop_size, self.img_size + crop_size) 
-        ds = tf.image.random_crop(ds, size=[self.img_size, self.img_size, 4])
-        img, mask = ds[:,:,:3], ds[:,:,-1]
-        mask = tf.expand_dims(mask, axis=2)
-        return img, mask
-
     def generate(self, img_paths, mask_paths, aug=False):
         imgs, masks = self.load_dataset(img_paths, mask_paths)
         dataset = tf.data.Dataset.from_tensor_slices((imgs, masks))
         dataset = dataset.map(self.preprocess, num_parallel_calls=tf.data.AUTOTUNE)
-        if aug:
-          dataset = dataset.map(self.augment, num_parallel_calls=tf.data.AUTOTUNE)
-
         dataset = dataset.batch(self.batch_size, drop_remainder=True)
         return dataset
